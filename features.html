@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sahayak AI Feature Explorer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTnHg4CGR2D7kSs0v4LLanw2qksYuRlEzO+tcaEPQogQ0KaoGN26/zrn20ImR1DfuLWnOo7aBA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Inter', sans-serif;
+      color: #f0f4f8;
+      overflow-x: hidden;
+      position: relative;
+    }
+    #canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+    }
+    .header {
+      position: relative;
+      text-align: center;
+      padding: 30px 20px;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      border-radius: 0 0 20px 20px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 1s ease-in;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    h1 {
+      font-size: 3rem;
+      font-weight: 900;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      color: #fff;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;   
+      /* grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); */
+      gap: 30px;
+      padding: 30px 30px;
+      perspective: 1000px;
+    }
+    .card {
+      background: linear-gradient(145deg, #2a5298, #1e3c72);
+      border-radius: 15px;
+      padding: 25px;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      transition: all 0.4s ease;
+      transform-style: preserve-3d;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+      animation: rotate 10s linear infinite;
+      z-index: 0;
+    }
+    @keyframes rotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .card:hover {
+      transform: scale(1.1) rotateY(10deg);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3);
+    }
+    .icon {
+      font-size: 40px;
+      color: #00eaff;
+      margin-bottom: 15px;
+      text-shadow: 0 0 10px #00eaff, 0 0 20px #00eaff;
+      position: relative;
+      z-index: 1;
+    }
+    .title {
+      font-weight: 700;
+      font-size: 1.3rem;
+      color: #fff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      position: relative;
+      z-index: 1;
+    }
+    .read-more {
+      font-size: 0.9rem;
+      color: #00eaff;
+      margin-top: 10px;
+      position: relative;
+      z-index: 1;
+    }
+    .description-box {
+      background: linear-gradient(135deg, #2a5298, #1e3c72);
+      margin: 40px auto;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+      max-width: 700px;
+      color: #f0f4f8;
+      animation: slideUp 0.5s ease-out;
+      position: relative;
+      z-index: 1;
+      position: fixed;
+      margin: auto auto auto auto;
+      top: 40%;
+      left: 30%;
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .description-box h2 {
+      font-size: 1.8rem;
+      margin-top: 0;
+      font-weight: 900;
+      text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.3);
+    }
+    .description-box ul {
+      list-style-type: none;
+      padding-left: 0;
+    }
+    .description-box li {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      position: relative;
+      padding-left: 20px;
+    }
+    .description-box li::before {
+      content: "•";
+      color: #00eaff;
+      position: absolute;
+      left: 0;
+    }
+    #close-button:hover{
+        transform: scale(1.2);
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+  <div class="header">
+    <h1>📚 Sahayak AI Feature Explorer</h1>
+  </div>
+  <div class="grid" id="featureGrid"></div>
+  <div class="description-box" id="featureDesc" style="display: none;">
+  </div>
+
+  <script>
+    // Particle Animation
+    debugger
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let particlesArray = [];
+    const numberOfParticles = 10;
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 3 + 1;
+        this.speedX = Math.random() * 2 - 1;
+        this.speedY = Math.random() * 2 - 1;
+        this.color = `hsl(${Math.random() * 360}, 70%, 50%)`;
+      }
+      update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        if (this.size > 0.2) this.size -= 0.1;
+        if (this.x < 0 || this.x > canvas.width) this.speedX = -this.speedX;
+        if (this.y < 0 || this.y > canvas.height) this.speedY = -this.speedY;
+      }
+      draw() {
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    function init() {
+      for (let i = 0; i < numberOfParticles; i++) {
+        particlesArray.push(new Particle());
+      }
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let i = 0; i < particlesArray.length; i++) {
+        particlesArray[i].update();
+        particlesArray[i].draw();
+        if (particlesArray[i].size <= 0.2) {
+          particlesArray.splice(i, 1);
+          i--;
+          particlesArray.push(new Particle());
+        }
+      }
+      requestAnimationFrame(animate);
+    }
+
+    init();
+    animate();
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+
+    // Feature Logic
+     const features = [
+      {
+        title: "Chat with AI Agent",
+        icon: "fa-lightbulb",
+        description:  `<ul><li>Engage with an intelligent AI assistant via a ChatGPT-style interface.</li><li>Ask for lesson explanations, story generation, or quiz creation.</li><li>Get personalized content in your local language (e.g., Hindi, Tamil).</li><li>Ideal for real-time classroom support, quick concept clarification, or lesson planning.</li><li>Supports multi-step queries with instant responses.</li></ul>`
+      },
+      {
+        title: "Homework & Document Checker",
+        icon: "fa-file-alt",
+        description: `<ul><li>Upload class notes, textbooks, or homework documents.</li><li>AI compares content to verify relevance of homework questions.</li><li>Rewrites irrelevant questions or suggests improved alternatives.</li><li>Provides a summary of uploaded documents for quick review.</li><li>Ensures alignment with taught material for better student outcomes.</li></ul>`
+      },
+      {
+        title: "Lesson Planner",
+        icon: "fa-calendar-alt",
+        description: `<ul><li>Generates weekly or daily lesson plans tailored to your subject and grade.</li><li>Includes activity suggestions, time breakdowns, and visual aid ideas.</li><li>Offers customizable plans based on available class time.</li><li>Saves hours of manual planning with AI-driven efficiency.</li><li>Integrates assessments and class flow for seamless teaching.</li></ul>`
+      },
+      {
+        title: "Worksheet from Image",
+        icon: "fa-image",
+        description: `<ul><li>Upload a photo of a textbook page or handwritten notes.</li><li>AI generates worksheets for multiple difficulty levels (e.g., Grade 2 to Grade 5).</li><li>Supports formats like MCQs, fill-in-the-blanks, or short answers.</li><li>Perfect for mixed-grade classrooms with instant adaptability.</li><li>Uses Gemini Vision for accurate image-to-text conversion.</li></ul>`
+      },
+      {
+        title: "Speech Trainer",
+        icon: "fa-microphone",
+        description: `<ul><li>Allows students to read paragraphs aloud for AI assessment.</li><li>Transcribes speech and provides feedback on pronunciation and fluency.</li><li>Detects errors and hesitations with detailed improvement suggestions.</li><li>Powered by Vertex AI Speech-to-Text for high accuracy.</li><li>Ideal for enhancing reading skills in low-resource settings.</li></ul>`
+      },
+      {
+        title: "Attendance Management",
+        icon: "fa-user-check",
+        description: `<ul><li>Mark attendance for each student per grade directly in the app.</li><li>View detailed attendance records and generate monthly reports.</li><li>Identifies frequently absent students for follow-up.</li><li>Integrates with notification system to alert parents or students.</li><li>Stores data securely in Firebase Firestore.</li></ul>`
+      },
+      {
+        title: "Assessment Generator",
+        icon: "fa-chart-bar",
+        description: `<ul><li>Creates custom quizzes based on topic, grade, and difficulty.</li><li>Offers MCQs, short answers, and true/false formats.</li><li>Allows selection of language and question style (e.g., easy or challenging).</li><li>Auto-generates assessments with instant availability.</li><li>Supports diverse educational needs across grades.</li></ul>`
+      },
+      {
+        title: "Notify Students",
+        icon: "fa-bell",
+        description: `<ul><li>Sends automatic notifications for homework, assessments, or completed portions.</li><li>Supports push notifications via Firebase Cloud Messaging.</li><li>Can extend to SMS or email for broader reach.</li><li>Alerts parents or students about important updates.</li><li>Ensures timely communication in low-tech environments.</li></ul>`
+      },
+      {
+        title: "Grade-Personalized Responses",
+        icon: "fa-brain",
+        description: `<ul><li>Tailors AI responses to match each grade’s learning level.</li><li>Grade 1 gets simple stories with visuals; Grade 9 gets detailed content with keywords.</li><li>Adapts teaching style for visual, auditory, or kinesthetic learners.</li><li>Personalization is integrated into all tools for consistency.</li><li>Enhances engagement with age-appropriate content.</li></ul>`
+      },
+    ];
+
+    const grid = document.getElementById('featureGrid');
+    const descBox = document.getElementById('featureDesc');
+
+    features.forEach((feature, i) => {
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="icon">
+            <i class="fas ${feature.icon}"></i>
+        </div>
+        <div class="title">${feature.title}</div>
+        <div class="read-more">Click to Read More</div>
+      `;
+      card.onclick = () => {
+        descBox.style.display = 'block';
+        descBox.innerHTML = `<button id="close-button"><i class="fas fa-times"></i></button><h2>${feature.title}</h2>${feature.description}`;
+        closeButton = document.getElementById("close-button")
+        closeButton.addEventListener('click',() => {descBox.style.display = 'none'})
+      };
+        
+        // closeButton.onclick = () => (document.getElementById('featureDesc').style.display = 'none');
+      grid.appendChild(card);
+    });
+
+  </script>
+</body>
+</html>
